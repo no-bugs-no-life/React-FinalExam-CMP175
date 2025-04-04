@@ -6,7 +6,6 @@ import {
     BellOutlined,
     SearchOutlined,
     UserOutlined,
-    SettingOutlined,
     LogoutOutlined
 } from '@ant-design/icons';
 import useAuthStore from '../store/authStore'; // Cập nhật path đúng với dự án bạn
@@ -45,11 +44,6 @@ const Navbar = () => {
             icon: <UserOutlined />,
             label: 'Profile',
             onClick: handleViewProfile,
-        },
-        {
-            key: 'settings',
-            icon: <SettingOutlined />,
-            label: 'Settings',
         },
         {
             type: 'divider',

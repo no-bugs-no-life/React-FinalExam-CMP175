@@ -1,7 +1,6 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
 import {
-    SettingOutlined,
     DashboardOutlined,
     TeamOutlined,
     ShoppingOutlined
@@ -37,21 +36,6 @@ const Sidebar = () => {
                     key: '/categories',
                     icon: <ShoppingOutlined />,
                     label: 'Categories'
-                }
-            ]
-        },
-        {
-            type: 'divider',
-        },
-        {
-            key: 'system',
-            label: 'System',
-            type: 'group',
-            children: [
-                {
-                    key: '/settings',
-                    icon: <SettingOutlined />,
-                    label: 'Settings'
                 }
             ]
         }
