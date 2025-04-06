@@ -1,0 +1,79 @@
+.ckeditor-container {
+  margin-bottom: 24px;
+}
+
+/* Fix chiều cao của editor */
+.ck-editor__editable_inline {
+  min-height: 300px;
+  max-height: 500px;
+}
+
+/* Styling cho toolbar */
+.ck.ck-toolbar {
+  border: 1px solid #d9d9d9;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Styling cho editable area */
+.ck.ck-editor__main>.ck-editor__editable {
+  border: 1px solid #d9d9d9;
+  border-top: none;
+  border-radius: 0 0 2px 2px;
+}
+
+/* Focus states */
+.ck.ck-editor__editable:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Custom styles cho theme phù hợp với Ant Design */
+.ck.ck-button:hover, .ck.ck-button.ck-on {
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.ck.ck-button.ck-on {
+  color: #1890ff;
+}
+
+/* Disable user select in toolbar */
+.ck.ck-toolbar {
+  user-select: none;
+}
+
+/* Style cho content đang hiển thị */
+.ck-content h1, .ck-content h2, .ck-content h3, .ck-content h4, .ck-content h5, .ck-content h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.ck-content p {
+  margin-bottom: 1em;
+}
+
+.ck-content ul, .ck-content ol {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.ck-content blockquote {
+  margin-left: 0;
+  padding-left: 1em;
+  border-left: 4px solid #e8e8e8;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.ck-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.ck-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.ck-content table td, .ck-content table th {
+  border: 1px solid #d9d9d9;
+  padding: 8px;
+}

@@ -7,6 +7,7 @@ import useAuthStore from './store/authStore';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Categories from './pages/Categories';
+import Articles from './pages/Articles'; // Thêm import này
 
 function App() {
   const { fetchAdminProfile, isAuth } = useAuthStore();
@@ -43,6 +44,14 @@ function App() {
           <ProtectedRoute>
             <AdminLayout>
               <Categories />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        {/* Thêm route cho Articles */}
+        <Route path="/articles" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Articles />
             </AdminLayout>
           </ProtectedRoute>
         } />

@@ -3,7 +3,8 @@ import { Layout, Menu } from 'antd';
 import {
     DashboardOutlined,
     TeamOutlined,
-    ShoppingOutlined
+    ShoppingOutlined,
+    FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -36,6 +37,11 @@ const Sidebar = () => {
                     key: '/categories',
                     icon: <ShoppingOutlined />,
                     label: 'Categories'
+                },
+                {
+                    key: '/articles',
+                    icon: <FileTextOutlined />,
+                    label: 'Articles'
                 }
             ]
         }
