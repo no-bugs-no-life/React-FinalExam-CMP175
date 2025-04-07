@@ -12,7 +12,7 @@ const { Option } = Select;
 const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) => {
     const [form] = Form.useForm();
     const [editorContent, setEditorContent] = useState('');
-    const [editorInstance, setEditorInstance] = useState(null);
+    const [editorInitialized, setEditorInitialized] = useState(false);
     const categories = useCategoryStore((state) => state.categories);
     const fetchCategories = useCategoryStore((state) => state.fetchCategories);
     const categoriesLoading = useCategoryStore((state) => state.loading);
@@ -36,22 +36,13 @@ const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) 
                 
                 // Set editor content
                 setEditorContent(initialValues.content || '');
-                
-                // Nếu editor đã được khởi tạo, cập nhật nội dung
-                if (editorInstance) {
-                    editorInstance.setData(initialValues.content || '');
-                }
             } else {
                 // Reset form và editor khi thêm mới
                 form.resetFields();
                 setEditorContent('');
-                
-                if (editorInstance) {
-                    editorInstance.setData('');
-                }
             }
         }
-    }, [open, initialValues, form, fetchCategories, editorInstance]);
+    }, [open, initialValues, form, fetchCategories]);
 
     const handleEditorChange = (event, editor) => {
         const data = editor.getData();
@@ -61,12 +52,16 @@ const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) 
     };
 
     const handleEditorReady = (editor) => {
-        setEditorInstance(editor);
+        console.log('CKEditor is ready to use!', editor);
+        setEditorInitialized(true);
         
-        // Nếu có initialValues và editor vừa được khởi tạo, set data ngay lập tức
-        if (initialValues?.content && editor) {
+        // Nếu có initialValues, cập nhật nội dung
+        if (initialValues?.content) {
             editor.setData(initialValues.content);
         }
+        
+        // Quan trọng: Đặt focus vào editor để người dùng có thể gõ ngay
+        editor.editing.view.focus();
     };
 
     const handleSubmit = () => {
@@ -101,7 +96,7 @@ const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) 
             onOk={handleSubmit}
             width={900}
             bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
-            destroyOnClose={false} // Để tránh việc khởi tạo lại editor mỗi lần đóng mở
+            destroyOnClose={true} // Đảm bảo component được khởi tạo lại mỗi lần mở
         >
             <Form
                 form={form}
@@ -144,7 +139,10 @@ const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) 
                         {open && (
                             <CKEditor
                                 editor={Editor}
-                                config={CKEConfig}
+                                config={{
+                                    ...CKEConfig,
+                                    placeholder: 'Type your content here...'
+                                }}
                                 data={editorContent}
                                 onChange={handleEditorChange}
                                 onReady={handleEditorReady}
