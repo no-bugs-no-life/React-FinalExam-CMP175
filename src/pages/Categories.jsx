@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Card, Button, Input, Space, Modal, message } from 'antd';
+import { Table, Card, Button, Input, Space, Modal, message, Image } from 'antd';
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import CategoryForm from '../components/Form/CategoryForm';
 import useCategoryStore from '../store/categoryStore';
-
 
 const Categories = () => {
     const [searchText, setSearchText] = useState('');
@@ -47,19 +46,13 @@ const Categories = () => {
     const handleFormSubmit = async (values) => {
         try {
             if (editingCategory) {
-                await updateCategory(editingCategory.id, values);
-                message.success('Category updated successfully');
+                await updateCategory(editingCategory._id, values);
             } else {
-                const response = await addCategory(values);
-                if (response.result) {
-                    message.success(response.msg || 'Category added successfully');
-                } else {
-                    message.error(response.msg || 'Failed to add category');
-                }
+                await addCategory(values);
             }
             setModalOpen(false);
         } catch (error) {
-            message.error('Failed to save category');
+            console.error('Failed to save category:', error);
         }
     };
 
@@ -72,10 +65,9 @@ const Categories = () => {
             cancelText: 'No',
             onOk: async () => {
                 try {
-                    await deleteCategory(record.id);
-                    message.success('Category deleted successfully');
+                    await deleteCategory(record._id);
                 } catch (error) {
-                    message.error('Failed to delete category');
+                    console.error('Failed to delete category:', error);
                 }
             }
         });
@@ -84,8 +76,8 @@ const Categories = () => {
     const columns = [
         {
             title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
+            dataIndex: '_id',
+            key: '_id',
             width: '100px',
         },
         {
@@ -98,10 +90,36 @@ const Categories = () => {
             },
         },
         {
-            title: 'Description',
-            dataIndex: 'description',
-            key: 'description',
-            ellipsis: true,
+            title: 'Slug',
+            dataIndex: 'slug',
+            key: 'slug',
+        },
+        {
+            title: 'Images',
+            dataIndex: 'images',
+            key: 'images',
+            render: (images) => (
+                <Image.PreviewGroup>
+                    <Space>
+                        {images?.map((url, index) => (
+                            <Image
+                                key={index}
+                                width={50}
+                                height={50}
+                                src={url}
+                                alt={`Category image ${index + 1}`}
+                                style={{ objectFit: 'cover' }}
+                            />
+                        ))}
+                    </Space>
+                </Image.PreviewGroup>
+            ),
+        },
+        {
+            title: 'Created At',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (date) => new Date(date).toLocaleDateString(),
         },
         {
             title: 'Actions',
@@ -147,6 +165,7 @@ const Categories = () => {
                 <Table
                     columns={columns}
                     dataSource={categories}
+                    rowKey="_id"
                     pagination={{ pageSize: 10 }}
                     loading={loading}
                 />
