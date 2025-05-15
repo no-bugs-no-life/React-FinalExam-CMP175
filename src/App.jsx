@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Categories from './pages/Categories';
 import Articles from './pages/Articles';
+import Tags from './pages/Tags';
 
 function App() {
   const { fetchUserProfile, isAuth } = useAuthStore();
@@ -52,6 +53,13 @@ function App() {
           <ProtectedRoute>
             <AdminLayout>
               <Articles />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/tags" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Tags />
             </AdminLayout>
           </ProtectedRoute>
         } />

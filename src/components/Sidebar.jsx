@@ -4,7 +4,8 @@ import {
     DashboardOutlined,
     TeamOutlined,
     ShoppingOutlined,
-    FileTextOutlined
+    FileTextOutlined,
+    TagOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -42,6 +43,11 @@ const Sidebar = () => {
                     key: '/articles',
                     icon: <FileTextOutlined />,
                     label: 'Articles'
+                },
+                {
+                    key: '/tags',
+                    icon: <TagOutlined />,
+                    label: 'Tags'
                 }
             ]
         }
