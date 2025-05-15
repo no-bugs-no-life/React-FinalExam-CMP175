@@ -5,84 +5,116 @@ import { API_URL } from '../configs/api';
 
 const useAuthStore = create((set, get) => ({
     isAuth: false,
-    adminProfile: null,
+    userProfile: null,
     loading: false,
 
     setAuth: (status) => set({ isAuth: status }),
 
-    login: async (encryptedData) => {
+    login: async (credentials) => {
         set({ loading: true });
         try {
-            const { data: response } = await axios.post(`${API_URL}/v1/auth/login`, {
-                email: encryptedData.email,
-                password: encryptedData.password
+            const { data: response } = await axios.post(`${API_URL}/users/login`, {
+                email: credentials.email,
+                password: credentials.password
             });
 
-            // Check if the response structure matches the expected format
-            if (response.result === true && response.data) {
-                const { accessToken, refreshToken } = response.data;
+            if (response.success) {
+                const { token, user } = response.data;
 
-                // Ensure the tokens exist
-                if (!accessToken || !refreshToken) {
-                    message.error('Missing tokens in response');
-                    set({ loading: false });
-                    return false;
-                }
+                // Store token securely
+                localStorage.setItem('accessToken', token);
 
-                // Store tokens securely
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', refreshToken);
+                // Set user profile and authentication status
+                set({ 
+                    userProfile: user,
+                    isAuth: true,
+                    loading: false 
+                });
 
-                // Fetch admin profile
-                await get().fetchAdminProfile();
-                set({ loading: false });
-                return { result: true, msg: response.msg };
+                message.success(response.message || 'Login successful');
+                return { success: true, message: response.message };
             } else {
-                message.error(response?.msg || 'Invalid credentials');
+                message.error(response.message || 'Invalid credentials');
                 set({ loading: false });
-                return { result: false, msg: response?.msg || 'Invalid credentials' };
+                return { success: false, message: response.message || 'Invalid credentials' };
             }
         } catch (error) {
             console.error('Login failed:', error.response?.data || error.message);
-            message.error('Login failed');
+            const errorMessage = error.response?.data?.message || 'Login failed';
+            message.error(errorMessage);
             set({ loading: false });
-            return { result: false, msg: 'Login failed' };
+            return { success: false, message: errorMessage };
         }
     },
-    fetchAdminProfile: async () => {
+
+    fetchUserProfile: async () => {
         try {
             const token = localStorage.getItem('accessToken');
             if (!token) {
-                set({ isAuth: false, adminProfile: null });
+                set({ isAuth: false, userProfile: null });
                 return;
             }
 
-            const { data: response } = await axios.get(`${API_URL}/v1/auth/me`, {
+            const { data: response } = await axios.get(`${API_URL}/users/me`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
 
-            // Check if the response structure matches the expected format
-            if (response.result === true && response.data) {
-                const { data } = response;
-
-                // Set the admin profile and authentication status
-                set({ adminProfile: data, isAuth: true });
+            if (response.success) {
+                set({ 
+                    userProfile: response.data,
+                    isAuth: true 
+                });
             } else {
                 localStorage.removeItem('accessToken');
-                set({ isAuth: false, adminProfile: null });
+                set({ isAuth: false, userProfile: null });
+                message.error(response.message || 'Failed to fetch profile');
             }
         } catch (error) {
-            console.error('Error fetching admin profile:', error.response?.data || error.message);
+            console.error('Error fetching user profile:', error.response?.data || error.message);
             localStorage.removeItem('accessToken');
-            set({ isAuth: false, adminProfile: null });
+            set({ isAuth: false, userProfile: null });
+            message.error('Failed to fetch profile');
         }
     },
+
     logout: () => {
         localStorage.removeItem('accessToken');
-        set({ isAuth: false, adminProfile: null });
+        set({ isAuth: false, userProfile: null });
+        message.success('Logged out successfully');
     },
+
+    changePassword: async (passwordData) => {
+        set({ loading: true });
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('Access token is missing');
+            }
+
+            const { data: response } = await axios.post(`${API_URL}/users/change-password`, passwordData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.success) {
+                message.success(response.message || 'Password changed successfully');
+                return { success: true, message: response.message };
+            } else {
+                message.error(response.message || 'Failed to change password');
+                return { success: false, message: response.message };
+            }
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to change password';
+            message.error(errorMessage);
+            return { success: false, message: errorMessage };
+        } finally {
+            set({ loading: false });
+        }
+    }
 }));
 
 export default useAuthStore;

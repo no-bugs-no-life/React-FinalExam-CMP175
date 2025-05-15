@@ -16,61 +16,63 @@ const useUsersStore = create((set) => ({
     fetchUsers: async (keyword = '', page = 1, pageSize = 10) => {
         set({ loading: true });
         try {
-            const token = localStorage.getItem('accessToken'); // Retrieve accessToken
+            const token = localStorage.getItem('accessToken');
             if (!token) {
                 throw new Error('Access token is missing. Please log in again.');
             }
-            const { data: response } = await axios.get(`${API_URL}/admin/users`, {
+            const { data: response } = await axios.get(`${API_URL}/users`, {
                 params: { q: keyword, page, pageSize },
                 headers: {
-                    Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+                    Authorization: `Bearer ${token}`,
                 },
             });
-            if (response.result) {
-                const { items, totalItems } = response.data;
+            if (response.success) {
                 set({
-                    users: items,
+                    users: response.data,
                     pagination: {
                         current: page,
                         pageSize,
-                        total: totalItems,
+                        total: response.data.length,
                     },
                     loading: false,
                 });
             } else {
-                message.error(response.msg || 'Failed to fetch users');
+                message.error(response.message || 'Failed to fetch users');
                 set({ loading: false });
             }
         } catch (error) {
-            message.error(error.response?.data?.msg || 'Failed to fetch users');
-            set({ loading: false });
+            const errorMessage = error.response?.data?.message || 'Failed to fetch users';
+            message.error(errorMessage);
+            set({ loading: false, error: errorMessage });
         }
     },
     
     addUser: async (userData) => {
         set({ loading: true });
         try {
-            const token = localStorage.getItem('accessToken'); // Retrieve accessToken
+            const token = localStorage.getItem('accessToken');
             if (!token) {
                 throw new Error('Access token is missing. Please log in again.');
             }
-            const { data: response } = await axios.post(`${API_URL}/admin/users`, userData, {
+            const { data: response } = await axios.post(`${API_URL}/users/register`, userData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             });
-            if (response.result) {
+            if (response.success) {
                 const fetchUsers = useUsersStore.getState().fetchUsers;
-                await fetchUsers(); // Refresh the user list after adding a new user
-                return response; // Return the response to handle in the component
+                await fetchUsers();
+                message.success(response.message || 'User added successfully');
+                return response;
             } else {
-                message.error(response.msg || 'Failed to add user');
-                return response; // Return the response to handle in the component
+                message.error(response.message || 'Failed to add user');
+                return response;
             }
         } catch (error) {
-            message.error(error.response?.data?.msg || 'Failed to add user');
-            throw error; // Rethrow the error to handle in the component
+            const errorMessage = error.response?.data?.message || 'Failed to add user';
+            message.error(errorMessage);
+            throw new Error(errorMessage);
         } finally {
             set({ loading: false });
         }
@@ -79,35 +81,33 @@ const useUsersStore = create((set) => ({
     updateUser: async (id, userData) => {
         set({ loading: true });
         try {
-            const token = localStorage.getItem('accessToken'); // Retrieve accessToken
+            const token = localStorage.getItem('accessToken');
             if (!token) {
                 throw new Error('Access token is missing. Please log in again.');
             }
-            const { data: response } = await axios.put(`${API_URL}/admin/users/${id}`, userData, {
+            const { data: response } = await axios.put(`${API_URL}/users/${id}`, userData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             });
-            if (response.result) {
-                // Update the local user list with the updated user data
+            if (response.success) {
                 set((state) => ({
                     users: state.users.map((user) =>
-                        user.id === id ? { ...user, ...response.data } : user
+                        user._id === id ? { ...user, ...response.data } : user
                     ),
                     loading: false,
                 }));
-                message.success(response.msg || 'User updated successfully');
-                return response; // Return the response to handle in the component
+                message.success(response.message || 'User updated successfully');
+                return response;
             } else {
-                message.error(response.msg || 'Failed to update user');
-                return response; // Return the response to handle in the component
+                message.error(response.message || 'Failed to update user');
+                return response;
             }
         } catch (error) {
-            // Handle errors gracefully
-            const errorMessage = error.response?.data?.msg || 'Failed to update user';
+            const errorMessage = error.response?.data?.message || 'Failed to update user';
             message.error(errorMessage);
-            throw new Error(errorMessage); // Rethrow the error to handle in the component
+            throw new Error(errorMessage);
         } finally {
             set({ loading: false });
         }
@@ -116,29 +116,29 @@ const useUsersStore = create((set) => ({
     deleteUser: async (id) => {
         set({ loading: true });
         try {
-            const token = localStorage.getItem('accessToken'); // Retrieve accessToken
+            const token = localStorage.getItem('accessToken');
             if (!token) {
                 throw new Error('Access token is missing. Please log in again.');
             }
-            const { data: response } = await axios.delete(`${API_URL}/admin/users/${id}`, {
+            const { data: response } = await axios.delete(`${API_URL}/users/${id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            if (response.result) {
-                // Update the users list by filtering out the deleted user
+            if (response.success) {
                 set((state) => ({
-                    users: state.users.filter(user => user.id !== id),
+                    users: state.users.filter(user => user._id !== id),
                     loading: false
                 }));
-                message.success(response.msg || 'User deleted successfully');
+                message.success(response.message || 'User deleted successfully');
             } else {
-                message.error(response.msg || 'Failed to delete user');
+                message.error(response.message || 'Failed to delete user');
                 set({ loading: false });
             }
         } catch (error) {
-            message.error(error.response?.data?.msg || 'Failed to delete user');
-            set({ error: error.message, loading: false });
+            const errorMessage = error.response?.data?.message || 'Failed to delete user';
+            message.error(errorMessage);
+            set({ error: errorMessage, loading: false });
         } finally {
             set({ loading: false });
         }

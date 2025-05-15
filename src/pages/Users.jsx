@@ -12,6 +12,7 @@ const Users = () => {
 
     const users = useUsersStore((state) => state.users);
     const loading = useUsersStore((state) => state.loading);
+    const pagination = useUsersStore((state) => state.pagination);
     const fetchUsers = useUsersStore((state) => state.fetchUsers);
     const addUser = useUsersStore((state) => state.addUser);
     const updateUser = useUsersStore((state) => state.updateUser);
@@ -49,22 +50,22 @@ const Users = () => {
             let response;
             if (editingUser) {
                 // Cập nhật người dùng
-                response = await updateUser(editingUser.id, values);
+                response = await updateUser(editingUser._id, values);
             } else {
                 // Thêm người dùng mới
                 response = await addUser(values);
             }
 
-            if (response.result) {
-                message.success(response.msg || (editingUser ? 'User updated successfully' : 'User added successfully'));
+            if (response.success) {
+                message.success(response.message || (editingUser ? 'User updated successfully' : 'User added successfully'));
                 fetchUsers(); // Làm mới danh sách người dùng
                 setModalOpen(false); // Đóng modal
                 setEditingUser(null); // Reset trạng thái chỉnh sửa
             } else {
-                message.error(response.msg || 'An error occurred while saving the user');
+                message.error(response.message || 'An error occurred while saving the user');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.msg || 'An unexpected error occurred while saving the user';
+            const errorMessage = error.response?.data?.message || 'An unexpected error occurred while saving the user';
             message.error(errorMessage);
         }
     };
@@ -72,13 +73,13 @@ const Users = () => {
     const handleDelete = (record) => {
         Modal.confirm({
             title: 'Delete User',
-            content: `Are you sure you want to delete ${record.firstName} ${record.lastName}?`,
+            content: `Are you sure you want to delete ${record.name}?`,
             okText: 'Yes',
             okType: 'danger',
             cancelText: 'No',
             onOk: async () => {
                 try {
-                    await deleteUser(record.id);
+                    await deleteUser(record._id);
                     message.success('User deleted successfully');
                     fetchUsers(); // Làm mới danh sách người dùng sau khi xóa
                 } catch (error) {
@@ -91,19 +92,14 @@ const Users = () => {
     const columns = [
         {
             title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
+            dataIndex: '_id',
+            key: '_id',
             width: '100px',
         },
         {
-            title: 'First Name',
-            dataIndex: 'firstName',
-            key: 'firstName',
-        },
-        {
-            title: 'Last Name',
-            dataIndex: 'lastName',
-            key: 'lastName',
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
         },
         {
             title: 'Email',
@@ -111,12 +107,32 @@ const Users = () => {
             key: 'email',
         },
         {
+            title: 'Role',
+            dataIndex: 'role',
+            key: 'role',
+            render: (role) => (
+                <Tag color={role === 'admin' ? 'red' : 'blue'}>
+                    {role.toUpperCase()}
+                </Tag>
+            ),
+        },
+        {
             title: 'Status',
-            dataIndex: 'isActive',
-            key: 'isActive',
-            render: (isActive) => (
-                <Tag color={isActive ? 'green' : 'red'}>
-                    {isActive ? 'ACTIVE' : 'INACTIVE'}
+            dataIndex: 'active',
+            key: 'active',
+            render: (active) => (
+                <Tag color={active ? 'green' : 'red'}>
+                    {active ? 'ACTIVE' : 'INACTIVE'}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Auth Provider',
+            dataIndex: 'authProvider',
+            key: 'authProvider',
+            render: (provider) => (
+                <Tag color={provider === 'google' ? 'blue' : 'default'}>
+                    {provider.toUpperCase()}
                 </Tag>
             ),
         },
@@ -163,9 +179,9 @@ const Users = () => {
             >
                 <Table
                     columns={columns}
-                    dataSource={users.map((user) => ({ ...user, key: user.id }))} // Thêm key duy nhất cho mỗi hàng
+                    dataSource={users.map((user) => ({ ...user, key: user._id }))} // Thêm key duy nhất cho mỗi hàng
                     pagination={{
-                        pageSize: 10,
+                        ...pagination,
                         onChange: (page, pageSize) => {
                             fetchUsers(searchText, page, pageSize);
                         },

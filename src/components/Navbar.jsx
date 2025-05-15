@@ -8,7 +8,7 @@ import {
     UserOutlined,
     LogoutOutlined
 } from '@ant-design/icons';
-import useAuthStore from '../store/authStore'; // Cập nhật path đúng với dự án bạn
+import useAuthStore from '../store/authStore';
 
 const { Header } = Layout;
 
@@ -16,22 +16,22 @@ const Navbar = () => {
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
     const {
-        adminProfile,
+        userProfile,
         isAuth,
-        fetchAdminProfile,
+        fetchUserProfile,
         logout,
     } = useAuthStore();
 
-    // Fetch profile nếu đang auth nhưng chưa có profile
+    // Fetch profile if authenticated but no profile
     useEffect(() => {
-        if (isAuth && !adminProfile) {
-            fetchAdminProfile();
+        if (isAuth && !userProfile) {
+            fetchUserProfile();
         }
-    }, [isAuth, adminProfile, fetchAdminProfile]);
+    }, [isAuth, userProfile, fetchUserProfile]);
 
     const handleLogout = () => {
         logout();
-        window.location.href = '/login'; // redirect sau khi logout
+        window.location.href = '/login';
     };
 
     const handleViewProfile = () => {
@@ -105,7 +105,7 @@ const Navbar = () => {
                                 style={{ backgroundColor: '#1890ff' }}
                             />
                             <span style={{ color: '#262626', marginLeft: '8px' }} className="hidden sm:inline">
-                                {adminProfile?.firstName || 'Admin'}
+                                {userProfile?.name || 'User'}
                             </span>
                         </Space>
                     </Dropdown>
@@ -122,8 +122,11 @@ const Navbar = () => {
                     </Button>
                 ]}
             >
-                <p><strong>Name:</strong> {adminProfile?.firstName || 'N/A'}</p>
-                <p><strong>Email:</strong> {adminProfile?.email || 'N/A'}</p>
+                <p><strong>Name:</strong> {userProfile?.name || 'N/A'}</p>
+                <p><strong>Email:</strong> {userProfile?.email || 'N/A'}</p>
+                <p><strong>Role:</strong> {userProfile?.role || 'N/A'}</p>
+                <p><strong>Auth Provider:</strong> {userProfile?.authProvider || 'N/A'}</p>
+                <p><strong>Status:</strong> {userProfile?.active ? 'Active' : 'Inactive'}</p>
             </Modal>
         </>
     );

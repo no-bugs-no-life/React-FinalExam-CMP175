@@ -7,18 +7,18 @@ import useAuthStore from './store/authStore';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Categories from './pages/Categories';
-import Articles from './pages/Articles'; // Thêm import này
+import Articles from './pages/Articles';
 
 function App() {
-  const { fetchAdminProfile, isAuth } = useAuthStore();
+  const { fetchUserProfile, isAuth } = useAuthStore();
 
   useEffect(() => {
     const initAuth = async () => {
-      await fetchAdminProfile();
+      await fetchUserProfile();
     };
 
     initAuth();
-  }, [fetchAdminProfile]);
+  }, [fetchUserProfile]);
 
   return (
     <BrowserRouter>
