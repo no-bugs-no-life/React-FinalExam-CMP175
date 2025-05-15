@@ -1,210 +1,302 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Modal, Select, message } from 'antd';
-import PropTypes from 'prop-types';
-import useCategoryStore from '../../store/categoryStore';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import Editor from 'ckeditor5-custom-build-v5-full';
-import { CKEConfig } from '../../utils/CkeditorConfig';
-import './ArticleForm.css';
+import React, { useEffect, useState } from "react";
+import {
+  Form,
+  Input,
+  Modal,
+  Select,
+  DatePicker,
+  Upload,
+  Button,
+  Space,
+  message,
+} from "antd";
+import { UploadOutlined, LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import dayjs from "dayjs";
+import axios from "axios";
+import useCategoryStore from "../../store/categoryStore";
+import useTagStore from "../../store/tagStore";
+import "./ArticleForm.css";
 
-const { Option } = Select;
+const { TextArea } = Input;
 
-const ArticleForm = ({ open, onCancel, onSubmit, initialValues, mode = 'add' }) => {
-    const [form] = Form.useForm();
-    const [editorContent, setEditorContent] = useState('');
-    const [editorInitialized, setEditorInitialized] = useState(false);
-    const categories = useCategoryStore((state) => state.categories);
-    const fetchCategories = useCategoryStore((state) => state.fetchCategories);
-    const categoriesLoading = useCategoryStore((state) => state.loading);
-
-    // Xử lý việc load initialValues vào form và editor
-    useEffect(() => {
-        if (open) {
-            fetchCategories();
-            
-            if (initialValues) {
-                console.log('Loading initial values:', initialValues);
-                
-                // Format categoryIds từ initialValues
-                const formattedValues = {
-                    ...initialValues,
-                    categoryIds: initialValues.articleCategories?.map(ac => ac.categoryId) || []
-                };
-                
-                // Set form values
-                form.setFieldsValue(formattedValues);
-                
-                // Set editor content
-                setEditorContent(initialValues.content || '');
-            } else {
-                // Reset form và editor khi thêm mới
-                form.resetFields();
-                setEditorContent('');
-            }
-        }
-    }, [open, initialValues, form, fetchCategories]);
-
-    const handleEditorChange = (event, editor) => {
-        const data = editor.getData();
-        setEditorContent(data);
-        // Cập nhật giá trị vào form để validation
-        form.setFieldsValue({ content: data });
-    };
-
-    const handleEditorReady = (editor) => {
-        console.log('CKEditor is ready to use!', editor);
-        setEditorInitialized(true);
-        
-        // Nếu có initialValues, cập nhật nội dung
-        if (initialValues?.content) {
-            editor.setData(initialValues.content);
-        }
-        
-        // Quan trọng: Đặt focus vào editor để người dùng có thể gõ ngay
-        editor.editing.view.focus();
-    };
-
-    const handleSubmit = () => {
-        form.validateFields()
-            .then((values) => {
-                // Đảm bảo content từ CKEditor được đưa vào values
-                const updatedValues = {
-                    ...values,
-                    content: editorContent
-                };
-                onSubmit(updatedValues);
-            })
-            .catch((info) => {
-                console.error('Validation Failed:', info);
-                message.error('Please correct the errors in the form.');
-            });
-    };
-
-    const handleCancel = () => {
-        form.resetFields();
-        setEditorContent('');
-        onCancel();
-    };
-
-    return (
-        <Modal
-            open={open}
-            title={mode === 'add' ? 'Add New Article' : 'Edit Article'}
-            okText={mode === 'add' ? 'Create' : 'Update'}
-            cancelText="Cancel"
-            onCancel={handleCancel}
-            onOk={handleSubmit}
-            width={900}
-            bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
-            destroyOnClose={true} // Đảm bảo component được khởi tạo lại mỗi lần mở
-        >
-            <Form
-                form={form}
-                layout="vertical"
-                preserve={false}
-            >
-                {mode === 'edit' && (
-                    <Form.Item name="id" label="ID">
-                        <Input disabled />
-                    </Form.Item>
-                )}
-
-                <Form.Item
-                    name="title"
-                    label="Title"
-                    rules={[{ required: true, message: 'Please input article title!' }]}
-                >
-                    <Input placeholder="Enter article title" />
-                </Form.Item>
-
-                <Form.Item
-                    name="content"
-                    label="Content"
-                    rules={[
-                        { 
-                            required: true, 
-                            message: 'Please input article content!' 
-                        },
-                        { 
-                            validator: (_, value) => {
-                                if (!value || value.trim() === '' || value.trim() === '<p>&nbsp;</p>') {
-                                    return Promise.reject('Article content cannot be empty');
-                                }
-                                return Promise.resolve();
-                            } 
-                        }
-                    ]}
-                >
-                    <div className="ckeditor-container">
-                        {open && (
-                            <CKEditor
-                                editor={Editor}
-                                config={{
-                                    ...CKEConfig,
-                                    placeholder: 'Type your content here...'
-                                }}
-                                data={editorContent}
-                                onChange={handleEditorChange}
-                                onReady={handleEditorReady}
-                            />
-                        )}
-                    </div>
-                </Form.Item>
-
-                <Form.Item
-                    name="image"
-                    label="Image URL"
-                    rules={[{ required: true, message: 'Please provide an image URL!' }]}
-                >
-                    <Input placeholder="Enter image URL" />
-                </Form.Item>
-
-                <Form.Item
-                    name="categoryIds"
-                    label="Categories"
-                    rules={[{ required: true, message: 'Please select at least one category!' }]}
-                >
-                    <Select
-                        mode="multiple"
-                        placeholder="Select categories"
-                        style={{ width: '100%' }}
-                        loading={categoriesLoading}
-                    >
-                        {categories.map(category => (
-                            <Option key={category.id} value={category.id}>{category.name}</Option>
-                        ))}
-                    </Select>
-                </Form.Item>
-
-                {mode === 'edit' && (
-                    <Form.Item name="authorId" label="Author ID">
-                        <Input disabled />
-                    </Form.Item>
-                )}
-
-                {mode === 'edit' && (
-                    <Form.Item
-                        name="status"
-                        label="Status"
-                    >
-                        <Select disabled>
-                            <Option value={0}>Pending</Option>
-                            <Option value={1}>Approved</Option>
-                            <Option value={2}>Rejected</Option>
-                        </Select>
-                    </Form.Item>
-                )}
-            </Form>
-        </Modal>
-    );
+const modules = {
+  toolbar: [
+    [{ header: [1, 2, 3, 4, 5, 6, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ indent: "-1" }, { indent: "+1" }],
+    [{ align: [] }],
+    ["link", "image"],
+    ["clean"],
+  ],
 };
 
-ArticleForm.propTypes = {
-    open: PropTypes.bool.isRequired,
-    onCancel: PropTypes.func.isRequired,
-    onSubmit: PropTypes.func.isRequired,
-    initialValues: PropTypes.object,
-    mode: PropTypes.oneOf(['add', 'edit'])
+const formats = [
+  "header",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "list",
+  "bullet",
+  "indent",
+  "align",
+  "link",
+  "image",
+];
+
+const ArticleForm = ({
+  open,
+  onCancel,
+  onSubmit,
+  initialValues,
+  mode = "add",
+}) => {
+  const [form] = Form.useForm();
+  const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const { categories, fetchCategories } = useCategoryStore();
+  const { tags, fetchTags } = useTagStore();
+
+  useEffect(() => {
+    fetchCategories();
+    fetchTags();
+  }, [fetchCategories, fetchTags]);
+
+  useEffect(() => {
+    if (initialValues) {
+      form.setFieldsValue({
+        ...initialValues,
+        publishedAt: initialValues.publishedAt
+          ? dayjs(initialValues.publishedAt)
+          : undefined,
+        tags: initialValues.tags?.map((tag) => tag._id),
+        category: initialValues.category?._id,
+        source: initialValues.source?.name,
+        sourceUrl: initialValues.source?.url,
+      });
+      setImageUrl(initialValues.thumbnail);
+    } else {
+      form.resetFields();
+      setImageUrl("");
+    }
+  }, [form, initialValues]);
+
+  const handleUpload = async (file) => {
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await axios.post(
+        "https://api.imgbb.com/1/upload?key=88880c6691fc66bb61f3ce04a967586e",
+        formData
+      );
+
+      if (response.data.success) {
+        setImageUrl(response.data.data.url);
+        return response.data.data.url;
+      }
+      return "";
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      return "";
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const generateSlug = (title) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const formData = {
+        ...values,
+        slug: generateSlug(values.title),
+        thumbnail: imageUrl,
+        source: values.source ? {
+          name: values.source,
+          url: values.sourceUrl || ''
+        } : undefined,
+        publishedAt: values.publishedAt?.toISOString(),
+        isCrawled: false,
+        status: 'draft'
+      };
+
+      // Remove source-related form fields that were just for the form
+      delete formData.sourceUrl;
+
+      await onSubmit(formData);
+      onCancel(); // Close the modal after successful submission
+      if (mode === 'add') {
+        form.resetFields();
+        setImageUrl('');
+      }
+    } catch (error) {
+      console.error('Form validation failed:', error);
+      if (error.errorFields) {
+        message.error('Please check all required fields');
+      }
+    }
+  };
+
+  const uploadProps = {
+    beforeUpload: async (file) => {
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        message.error("You can only upload image files!");
+        return Upload.LIST_IGNORE;
+      }
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isLt2M) {
+        message.error("Image must be smaller than 2MB!");
+        return Upload.LIST_IGNORE;
+      }
+      await handleUpload(file);
+      return false;
+    },
+    showUploadList: false,
+  };
+
+  return (
+    <Modal
+      open={open}
+      title={mode === "add" ? "Add New Article" : "Edit Article"}
+      okText={mode === "add" ? "Create" : "Update"}
+      cancelText="Cancel"
+      onCancel={() => {
+        form.resetFields();
+        setImageUrl("");
+        onCancel();
+      }}
+      onOk={handleSubmit}
+      width={1000}
+      style={{ top: 20 }}
+    >
+      <Form form={form} layout="vertical">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div>
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: "Please input article title!" }]}
+            >
+              <Input placeholder="Enter article title" />
+            </Form.Item>
+
+            <Form.Item
+              name="summary"
+              label="Summary"
+              rules={[{ required: true, message: "Please input article summary!" }]}
+            >
+              <TextArea
+                placeholder="Enter article summary"
+                autoSize={{ minRows: 3, maxRows: 5 }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="category"
+              label="Category"
+              rules={[{ required: true, message: "Please select a category!" }]}
+            >
+              <Select placeholder="Select category">
+                {categories.map((category) => (
+                  <Select.Option key={category._id} value={category._id}>
+                    {category.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="tags"
+              label="Tags"
+              rules={[{ required: true, message: "Please select at least one tag!" }]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select tags"
+                style={{ width: "100%" }}
+              >
+                {tags.map((tag) => (
+                  <Select.Option key={tag._id} value={tag._id}>
+                    {tag.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="publishedAt"
+              label="Publish Date"
+              rules={[{ required: true, message: "Please select publish date!" }]}
+            >
+              <DatePicker showTime style={{ width: "100%" }} />
+            </Form.Item>
+          </div>
+
+          <div>
+            <Form.Item name="source" label="Source Name">
+              <Input placeholder="Enter source name" />
+            </Form.Item>
+
+            <Form.Item name="sourceUrl" label="Source URL">
+              <Input placeholder="Enter source URL" />
+            </Form.Item>
+
+            <Form.Item label="Thumbnail">
+              <Upload {...uploadProps}>
+                <Button icon={uploading ? <LoadingOutlined /> : <UploadOutlined />}>
+                  {uploading ? "Uploading..." : "Upload Thumbnail"}
+                </Button>
+              </Upload>
+              {imageUrl && (
+                <div style={{ marginTop: 8, position: 'relative' }}>
+                  <img
+                    src={imageUrl}
+                    alt="thumbnail"
+                    style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "4px" }}
+                  />
+                  <Button 
+                    type="text" 
+                    danger
+                    icon={<DeleteOutlined />}
+                    style={{ position: 'absolute', top: 8, right: 8 }}
+                    onClick={() => setImageUrl("")}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </Form.Item>
+          </div>
+        </div>
+
+        <Form.Item
+          name="content"
+          label="Content"
+          rules={[{ required: true, message: "Please input article content!" }]}
+          style={{ marginTop: '20px' }}
+        >
+          <ReactQuill 
+            theme="snow" 
+            modules={modules}
+            formats={formats}
+            style={{ height: 300, marginBottom: 50 }} 
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
 };
 
 export default ArticleForm;

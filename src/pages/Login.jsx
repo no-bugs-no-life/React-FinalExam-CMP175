@@ -39,7 +39,7 @@ const Login = () => {
         }}>
             <Card style={{ width: 400, padding: '24px' }}>
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                    <h1 style={{ fontSize: '24px', color: '#1890ff' }}>DDHACK Admin</h1>
+                    <h1 style={{ fontSize: '24px', color: '#1890ff' }}>DevNews Admin</h1>
                     <p style={{ color: '#666' }}>Welcome back! Please login.</p>
                 </div>
                 

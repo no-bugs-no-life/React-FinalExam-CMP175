@@ -6,7 +6,8 @@ import { message } from 'antd';
 const useArticleStore = create((set, get) => ({
     articles: [],
     loading: false,
-    error: null,
+    selectedArticle: null,
+    modalVisible: false,
     pagination: {
         current: 1,
         pageSize: 10,
@@ -14,6 +15,17 @@ const useArticleStore = create((set, get) => ({
         totalPages: 0
     },
     
+    setModalVisible: (visible) => {
+        if (!visible) {
+            set({ selectedArticle: null });
+        }
+        set({ modalVisible: visible });
+    },
+    
+    setSelectedArticle: (article) => set({ selectedArticle: article }),
+
+    setPagination: (pagination) => set({ pagination }),
+
     fetchArticles: async (page = 1, pageSize = 10, keyword = '') => {
         set({ loading: true, error: null });
         try {
@@ -24,42 +36,43 @@ const useArticleStore = create((set, get) => ({
             
             console.log('Fetching articles with params:', { page, pageSize, title: keyword });
             
-            // Tạo params object
-            const params = { page, pageSize };
+            const params = {
+                'page': page,
+                'limit': pageSize
+            };
             
-            // Thay đổi tham số tìm kiếm từ 'q' thành 'title'
             if (keyword && keyword.trim() !== '') {
                 params.title = keyword.trim();
             }
             
-            const { data: response } = await axios.get(`${API_URL}/admin/articles`, {
+            const { data: response } = await axios.get(`${API_URL}/articles`, {
                 params,
                 headers: { Authorization: `Bearer ${token}` },
             });
             
-            if (response.result) {
-                const { items, page: currentPage, pageSize: size, totalItems, totalPages } = response.data;
+            if (response.success) {
+                const { articles, pagination } = response.data;
                 
                 set({ 
-                    articles: items || [], 
+                    articles: articles || [], 
                     pagination: {
-                        current: parseInt(currentPage) || 1,
-                        pageSize: parseInt(size) || 10,
-                        total: parseInt(totalItems) || 0,
-                        totalPages: parseInt(totalPages) || 0
+                        current: parseInt(pagination.page) || 1,
+                        pageSize: parseInt(pagination.limit) || 10,
+                        total: parseInt(pagination.total) || 0,
+                        totalPages: parseInt(pagination.totalPages) || 0
                     },
                     loading: false,
                     error: null
                 });
                 
-                console.log('Articles loaded successfully:', items?.length || 0, 'items', 'for title:', keyword || '(none)');
+                console.log('Articles loaded successfully:', articles?.length || 0, 'items');
             } else {
-                message.error(response.msg || 'Failed to fetch articles');
-                set({ loading: false, error: response.msg });
+                message.error(response.message || 'Failed to fetch articles');
+                set({ loading: false, error: response.message });
             }
         } catch (error) {
             console.error('Error fetching articles:', error);
-            message.error(error.response?.data?.msg || 'Failed to fetch articles');
+            message.error(error.response?.data?.message || 'Failed to fetch articles');
             set({ 
                 loading: false, 
                 error: error.message,
@@ -76,23 +89,28 @@ const useArticleStore = create((set, get) => ({
                 throw new Error('Access token is missing. Please log in again.');
             }
             
-            const { data: response } = await axios.post(`${API_URL}/admin/articles`, articleData, {
+            const { data: response } = await axios.post(`${API_URL}/articles`, articleData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
             
-            if (response.result) {
-                const { current, pageSize } = get().pagination;
-                await get().fetchArticles(current, pageSize);
-                return response;
+            if (response.success) {
+                message.success(response.message || 'Article created successfully');
+                const newArticle = response.data;
+                set(state => ({
+                    articles: [newArticle, ...state.articles]
+                }));
+                set({ modalVisible: false });
+                return response.data;
             } else {
-                message.error(response.msg || 'Failed to add article');
-                return response;
+                message.error(response.message || 'Failed to add article');
+                return null;
             }
         } catch (error) {
-            message.error(error.response?.data?.msg || 'Failed to add article');
+            console.error('Error adding article:', error);
+            message.error(error.response?.data?.message || 'Failed to add article');
             throw error;
         } finally {
             set({ loading: false });
@@ -107,24 +125,30 @@ const useArticleStore = create((set, get) => ({
                 throw new Error('Access token is missing. Please log in again.');
             }
             
-            const { data: response } = await axios.put(`${API_URL}/admin/articles/${id}`, articleData, {
+            const { data: response } = await axios.put(`${API_URL}/articles/${id}`, articleData, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
             });
             
-            if (response.result) {
-                message.success(response.msg || 'Article updated successfully');
-                const { current, pageSize } = get().pagination;
-                await get().fetchArticles(current, pageSize);
-                return response;
+            if (response.success) {
+                message.success(response.message || 'Article updated successfully');
+                const updatedArticle = response.data;
+                set(state => ({
+                    articles: state.articles.map(article => 
+                        article._id === id ? updatedArticle : article
+                    )
+                }));
+                set({ modalVisible: false });
+                return response.data;
             } else {
-                message.error(response.msg || 'Failed to update article');
-                return response;
+                message.error(response.message || 'Failed to update article');
+                return null;
             }
         } catch (error) {
-            message.error(error.response?.data?.msg || 'Failed to update article');
+            console.error('Error updating article:', error);
+            message.error(error.response?.data?.message || 'Failed to update article');
             throw error;
         } finally {
             set({ loading: false });
@@ -139,7 +163,7 @@ const useArticleStore = create((set, get) => ({
                 throw new Error('Access token is missing. Please log in again.');
             }
             
-            const { data: response } = await axios.delete(`${API_URL}/admin/articles/${id}`, {
+            const { data: response } = await axios.delete(`${API_URL}/articles/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             
@@ -168,7 +192,7 @@ const useArticleStore = create((set, get) => ({
                 throw new Error('Access token is missing. Please log in again.');
             }
             
-            const { data: response } = await axios.patch(`${API_URL}/admin/articles/${id}/status`, { status }, {
+            const { data: response } = await axios.patch(`${API_URL}/articles/${id}/status`, { status }, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
